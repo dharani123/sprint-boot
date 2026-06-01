@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spring Boot Learner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0d0f18;color:#e2e8f0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── Top Bar ── */
+.topbar{background:#13162b;border-bottom:1px solid #252847;padding:0 20px;height:48px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.topbar h1{font-size:15px;font-weight:700;color:#818cf8;letter-spacing:.5px}
+.topbar .subtitle{font-size:12px;color:#4b5280;border-left:1px solid #252847;padding-left:16px}
+.server-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#4b5280}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#f56565}
+.status-dot.online{background:#68d391;box-shadow:0 0 6px #68d39166}
+
+/* ── Layout ── */
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{width:240px;background:#0d0f18;border-right:1px solid #1e2133;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sidebar-title{padding:12px 16px 8px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#4b5280}
+.group{margin-bottom:4px}
+.group-label{padding:6px 16px;font-size:11px;font-weight:700;color:#6366f1;letter-spacing:.5px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.group-label:hover{color:#818cf8}
+.group-label .arrow{font-size:9px;transition:transform .2s}
+.group.open .arrow{transform:rotate(90deg)}
+.group-items{display:none}
+.group.open .group-items{display:block}
+.api-item{padding:7px 16px 7px 28px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:2px solid transparent;transition:all .15s;color:#8892b0}
+.api-item:hover{background:#13162b;color:#e2e8f0}
+.api-item.active{background:#13162b;border-left-color:#6366f1;color:#e2e8f0}
+.method-badge{font-size:10px;font-weight:800;font-family:monospace;padding:2px 5px;border-radius:3px;min-width:40px;text-align:center}
+.GET   {background:#0d3321;color:#68d391}
+.POST  {background:#2d2009;color:#f6ad55}
+.PUT   {background:#0d1f38;color:#63b3ed}
+.DELETE{background:#3b0f0f;color:#f56565}
+.PATCH {background:#1a0d33;color:#b794f4}
+
+/* ── Main Content ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── Endpoint Header ── */
+.endpoint-header{background:#13162b;border-bottom:1px solid #1e2133;padding:14px 20px;flex-shrink:0}
+.endpoint-title{font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px}
+.endpoint-desc{font-size:12px;color:#6b7280}
+.endpoint-analogy{margin-top:8px;padding:8px 12px;background:#0d0f18;border-left:3px solid #6366f1;border-radius:0 6px 6px 0;font-size:12px;color:#a5b4fc;line-height:1.6}
+
+/* ── URL Bar ── */
+.urlbar{display:flex;gap:10px;padding:12px 20px;background:#0d0f18;border-bottom:1px solid #1e2133;flex-shrink:0;align-items:center}
+.method-select{background:#1e2133;border:1px solid #2d3158;color:#818cf8;font-weight:700;font-size:13px;padding:7px 10px;border-radius:6px;cursor:pointer;outline:none;min-width:90px}
+.url-input{flex:1;background:#1a1d30;border:1px solid #2d3158;color:#e2e8f0;font-size:13px;padding:8px 14px;border-radius:6px;outline:none;font-family:'Courier New',monospace}
+.url-input:focus{border-color:#6366f1}
+.send-btn{background:#4f46e5;color:white;border:none;padding:8px 22px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap}
+.send-btn:hover{background:#6366f1}
+.send-btn:disabled{background:#2d3158;cursor:not-allowed}
+
+/* ── Request / Response Panels ── */
+.panels{display:flex;flex:1;overflow:hidden}
+.panel{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid #1e2133}
+.panel:last-child{border-right:none}
+.panel-header{padding:9px 16px;background:#13162b;border-bottom:1px solid #1e2133;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#4b5280;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.panel-header .dot{width:7px;height:7px;border-radius:50%}
+
+/* Tabs */
+.tabs{display:flex;background:#0d0f18;border-bottom:1px solid #1e2133;flex-shrink:0}
+.tab{padding:8px 14px;font-size:12px;cursor:pointer;color:#4b5280;border-bottom:2px solid transparent;transition:all .15s;user-select:none}
+.tab:hover{color:#a0aec0}
+.tab.active{color:#818cf8;border-bottom-color:#6366f1}
+.tab-content{display:none;flex:1;overflow:auto;flex-direction:column}
+.tab-content.active{display:flex}
+
+/* Key-value table */
+.kv-table{padding:10px 14px;flex:1}
+.kv-table table{width:100%;border-collapse:collapse;font-size:12px}
+.kv-table th{text-align:left;padding:5px 6px;color:#4b5280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1e2133}
+.kv-table td{padding:3px 3px}
+.kv-table input[type=text]{width:100%;background:#1a1d30;border:1px solid #1e2133;color:#e2e8f0;padding:5px 8px;border-radius:4px;font-size:12px;outline:none;font-family:'Courier New',monospace}
+.kv-table input[type=text]:focus{border-color:#4f46e5}
+.kv-table input[type=checkbox]{cursor:pointer;accent-color:#818cf8}
+.del-btn{background:none;border:none;color:#4b5280;cursor:pointer;font-size:15px;padding:1px 5px;border-radius:3px}
+.del-btn:hover{color:#f56565}
+.add-row-btn{margin:6px 14px;background:none;border:1px dashed #1e2133;color:#4b5280;padding:5px;border-radius:5px;cursor:pointer;font-size:11px;width:calc(100% - 28px);transition:all .15s}
+.add-row-btn:hover{border-color:#4f46e5;color:#818cf8}
+
+/* Body area */
+.body-area{flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.body-hint{font-size:11px;color:#4b5280}
+.body-area textarea{flex:1;background:#1a1d30;border:1px solid #1e2133;color:#a8d8a8;padding:10px;border-radius:6px;font-size:12px;font-family:'Courier New',monospace;resize:none;outline:none;line-height:1.7;min-height:120px}
+.body-area textarea:focus{border-color:#4f46e5}
+
+/* Response meta */
+.res-meta{display:flex;gap:20px;padding:7px 14px;background:#0d0f18;border-bottom:1px solid #1e2133;font-size:12px;align-items:center;flex-shrink:0}
+.meta-label{color:#4b5280}
+.meta-val{font-weight:600;font-family:'Courier New',monospace}
+.s200{color:#68d391}.s4xx{color:#f6ad55}.s5xx{color:#f56565}.s0{color:#4b5280}
+
+/* Response body */
+.res-body{flex:1;overflow:auto;padding:12px 14px}
+pre.res-pre{font-family:'Courier New',monospace;font-size:12px;line-height:1.8;white-space:pre-wrap;word-break:break-all;color:#a8d8a8;background:#1a1d30;padding:14px;border-radius:6px;min-height:100%}
+pre.res-pre.empty{color:#2d3158;font-style:italic}
+pre.res-pre.err{color:#f56565}
+
+/* Concept callout */
+.concept-box{margin:12px 14px;padding:10px 14px;background:#13162b;border:1px solid #252847;border-radius:8px;font-size:12px;line-height:1.7;color:#94a3b8}
+.concept-box strong{color:#818cf8}
+.concept-box code{background:#0d0f18;padding:1px 5px;border-radius:3px;color:#a8d8a8;font-family:'Courier New',monospace;font-size:11px}
+
+/* Spinner */
+.spinner{display:inline-block;width:11px;height:11px;border:2px solid #2d3158;border-top-color:#818cf8;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#0d0f18}
+::-webkit-scrollbar-thumb{background:#1e2133;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#2d3158}
+
+/* Placeholder page */
+.placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#2d3158;gap:12px}
+.placeholder .big{font-size:48px}
+.placeholder p{font-size:13px;color:#4b5280;text-align:center;max-width:280px;line-height:1.7}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <h1>⚡ Spring Boot Learner</h1>
+  <span class="subtitle">Interactive API Explorer</span>
+  <div class="server-status">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">checking...</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-title">API Endpoints</div>
+
+    <!-- Group: Hello APIs -->
+    <div class="group open" id="group-hello">
+      <div class="group-label" onclick="toggleGroup('hello')">
+        <span class="arrow">▶</span> Hello APIs
+      </div>
+      <div class="group-items">
+        <div class="api-item" onclick="loadEndpoint('hello-hello')">
+          <span class="method-badge GET">GET</span> /hello
+        </div>
+        <div class="api-item" onclick="loadEndpoint('hello-greet')">
+          <span class="method-badge GET">GET</span> /greet/{name}
+        </div>
+        <div class="api-item" onclick="loadEndpoint('hello-welcome')">
+          <span class="method-badge GET">GET</span> /welcome
+        </div>
+      </div>
+    </div>
+
+    <!-- Group: Actuator -->
+    <div class="group open" id="group-actuator">
+      <div class="group-label" onclick="toggleGroup('actuator')">
+        <span class="arrow">▶</span> Actuator (Dashboard)
+      </div>
+      <div class="group-items">
+        <div class="api-item" onclick="loadEndpoint('act-all')">
+          <span class="method-badge GET">GET</span> /actuator
+        </div>
+        <div class="api-item" onclick="loadEndpoint('act-health')">
+          <span class="method-badge GET">GET</span> /actuator/health
+        </div>
+        <div class="api-item" onclick="loadEndpoint('act-info')">
+          <span class="method-badge GET">GET</span> /actuator/info
+        </div>
+        <div class="api-item" onclick="loadEndpoint('act-metrics')">
+          <span class="method-badge GET">GET</span> /actuator/metrics
+        </div>
+        <div class="api-item" onclick="loadEndpoint('act-beans')">
+          <span class="method-badge GET">GET</span> /actuator/beans
+        </div>
+        <div class="api-item" onclick="loadEndpoint('act-mappings')">
+          <span class="method-badge GET">GET</span> /actuator/mappings
+        </div>
+        <div class="api-item" onclick="loadEndpoint('act-env')">
+          <span class="method-badge GET">GET</span> /actuator/env
+        </div>
+      </div>
+    </div>
+
+    <!-- Group: Profiles -->
+    <div class="group open" id="group-profiles">
+      <div class="group-label" onclick="toggleGroup('profiles')">
+        <span class="arrow">▶</span> Profiles &amp; Config
+      </div>
+      <div class="group-items">
+        <div class="api-item" onclick="loadEndpoint('profile-info')">
+          <span class="method-badge GET">GET</span> /api/info
+        </div>
+        <div class="api-item" onclick="loadEndpoint('profile-value')">
+          <span class="method-badge GET">GET</span> @Value injection
+        </div>
+      </div>
+    </div>
+
+    <!-- Group: Bean Validation -->
+    <div class="group open" id="group-validation">
+      <div class="group-label" onclick="toggleGroup('validation')">
+        <span class="arrow">▶</span> Bean Validation
+      </div>
+      <div class="group-items">
+        <div class="api-item" onclick="loadEndpoint('val-allbad')">
+          <span class="method-badge POST">POST</span> All Fields Invalid
+        </div>
+        <div class="api-item" onclick="loadEndpoint('val-partialbad')">
+          <span class="method-badge POST">POST</span> Email Invalid Only
+        </div>
+        <div class="api-item" onclick="loadEndpoint('val-toolong')">
+          <span class="method-badge POST">POST</span> Name Too Long
+        </div>
+        <div class="api-item" onclick="loadEndpoint('val-valid')">
+          <span class="method-badge POST">POST</span> Valid Request ✓
+        </div>
+      </div>
+    </div>
+
+    <!-- Group: Exception Handling -->
+    <div class="group open" id="group-exceptions">
+      <div class="group-label" onclick="toggleGroup('exceptions')">
+        <span class="arrow">▶</span> Exception Handling
+      </div>
+      <div class="group-items">
+        <div class="api-item" onclick="loadEndpoint('ex-notfound')">
+          <span class="method-badge GET">GET</span> 404 Not Found
+        </div>
+        <div class="api-item" onclick="loadEndpoint('ex-duplicate')">
+          <span class="method-badge POST">POST</span> 409 Duplicate Email
+        </div>
+        <div class="api-item" onclick="loadEndpoint('ex-badtype')">
+          <span class="method-badge GET">GET</span> 400 Bad Type
+        </div>
+        <div class="api-item" onclick="loadEndpoint('ex-badjson')">
+          <span class="method-badge POST">POST</span> 400 Bad JSON
+        </div>
+      </div>
+    </div>
+
+    <!-- Group: Students API (JPA) -->
+    <div class="group open" id="group-students">
+      <div class="group-label" onclick="toggleGroup('students')">
+        <span class="arrow">▶</span> Students API (JPA)
+      </div>
+      <div class="group-items">
+        <div class="api-item" onclick="loadEndpoint('students-getAll')">
+          <span class="method-badge GET">GET</span> /api/students
+        </div>
+        <div class="api-item" onclick="loadEndpoint('students-getOne')">
+          <span class="method-badge GET">GET</span> /api/students/{id}
+        </div>
+        <div class="api-item" onclick="loadEndpoint('students-create')">
+          <span class="method-badge POST">POST</span> /api/students
+        </div>
+        <div class="api-item" onclick="loadEndpoint('students-update')">
+          <span class="method-badge PUT">PUT</span> /api/students/{id}
+        </div>
+        <div class="api-item" onclick="loadEndpoint('students-delete')">
+          <span class="method-badge DELETE">DELETE</span> /api/students/{id}
+        </div>
+        <div class="api-item" onclick="loadEndpoint('students-byCourse')">
+          <span class="method-badge GET">GET</span> /api/students/course/{course}
+        </div>
+        <div class="api-item" onclick="loadEndpoint('students-search')">
+          <span class="method-badge GET">GET</span> /api/students/search
+        </div>
+      </div>
+    </div>
+
+    <!-- Group: Orders API (Dependency Injection) -->
+    <div class="group open" id="group-orders">
+      <div class="group-label" onclick="toggleGroup('orders')">
+        <span class="arrow">▶</span> Orders API (DI)
+      </div>
+      <div class="group-items">
+        <div class="api-item" onclick="loadEndpoint('orders-summary')">
+          <span class="method-badge GET">GET</span> /api/orders/summary
+        </div>
+        <div class="api-item" onclick="loadEndpoint('orders-getAll')">
+          <span class="method-badge GET">GET</span> /api/orders
+        </div>
+        <div class="api-item" onclick="loadEndpoint('orders-place')">
+          <span class="method-badge POST">POST</span> /api/orders
+        </div>
+      </div>
+    </div>
+
+    <!-- Group: Products API -->
+    <div class="group open" id="group-products">
+      <div class="group-label" onclick="toggleGroup('products')">
+        <span class="arrow">▶</span> Products API
+      </div>
+      <div class="group-items">
+        <div class="api-item" onclick="loadEndpoint('products-getAll')">
+          <span class="method-badge GET">GET</span> /api/products
+        </div>
+        <div class="api-item" onclick="loadEndpoint('products-getOne')">
+          <span class="method-badge GET">GET</span> /api/products/{id}
+        </div>
+        <div class="api-item" onclick="loadEndpoint('products-create')">
+          <span class="method-badge POST">POST</span> /api/products
+        </div>
+        <div class="api-item" onclick="loadEndpoint('products-update')">
+          <span class="method-badge PUT">PUT</span> /api/products/{id}
+        </div>
+        <div class="api-item" onclick="loadEndpoint('products-delete')">
+          <span class="method-badge DELETE">DELETE</span> /api/products/{id}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main" id="mainContent">
+    <div class="placeholder">
+      <div class="big">🚀</div>
+      <p>Select an endpoint from the sidebar to start exploring your Spring Boot APIs</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const BASE = 'http://localhost:8080';
+
+// ── Endpoint Definitions ──
+const ENDPOINTS = {
+  'act-all': {
+    title: 'GET /actuator — All Available Endpoints',
+    desc: 'Lists every actuator endpoint enabled in the current profile',
+    analogy: '🚗 Opening the car dashboard for the first time — it shows you every gauge and dial available to you.',
+    concept: '<strong>Spring Boot Actuator</strong> adds production-ready monitoring to your app with one dependency. This root endpoint lists all available sub-endpoints as HATEOAS links. In dev, all are exposed (<code>exposure.include=*</code>). In prod, only <code>health</code> and <code>info</code> are exposed — never expose <code>beans</code> or <code>env</code> in production (they reveal internal details).',
+    method: 'GET', url: BASE+'/actuator', params:[], headers:[], body:''
+  },
+  'act-health': {
+    title: 'GET /actuator/health — App Health Status',
+    desc: 'Shows overall health + each component (DB, disk, custom indicators)',
+    analogy: '❤️ A doctor\'s full body checkup report. Overall status = UP/DOWN. Then each organ (DB, disk space, your custom StudentDb check) gets its own result. If any component is DOWN, the overall status is DOWN.',
+    concept: '<strong>Built-in health indicators</strong>: Spring auto-adds <code>db</code> (can it reach H2?), <code>diskSpace</code> (is disk full?). <strong>Custom indicator</strong>: our <code>StudentDbHealthIndicator</code> implements <code>HealthIndicator</code> — Spring picks it up automatically and adds it as <code>studentDb</code>. The name is derived from the class name. Used by load balancers and Kubernetes to decide if the pod is healthy.',
+    method: 'GET', url: BASE+'/actuator/health', params:[], headers:[], body:''
+  },
+  'act-info': {
+    title: 'GET /actuator/info — App Info',
+    desc: 'Shows custom info defined in application-dev.properties under info.*',
+    analogy: '📋 The app\'s ID card — name, version, description. You define this in properties, Actuator serves it.',
+    concept: '<strong>info.*</strong> properties in application-dev.properties are automatically exposed here. We defined <code>info.app.name</code>, <code>info.app.version</code> etc. This is where CI/CD pipelines often inject the git commit hash and build timestamp so you can always tell exactly what version is running in production.',
+    method: 'GET', url: BASE+'/actuator/info', params:[], headers:[], body:''
+  },
+  'act-metrics': {
+    title: 'GET /actuator/metrics — JVM & App Metrics',
+    desc: 'Lists all available metrics — JVM memory, CPU, HTTP request counts, DB pool',
+    analogy: '📊 The car\'s instrument cluster — speed (request rate), fuel (memory), engine temperature (CPU). You can drill into any metric by appending its name to the URL.',
+    concept: '<strong>Built-in metrics</strong> include: <code>jvm.memory.used</code>, <code>jvm.gc.pause</code>, <code>http.server.requests</code> (count + duration per endpoint), <code>hikaricp.connections</code> (DB pool usage). Hit this endpoint to see the list, then try <code>/actuator/metrics/jvm.memory.used</code> to drill into one.',
+    method: 'GET', url: BASE+'/actuator/metrics', params:[], headers:[], body:''
+  },
+  'act-beans': {
+    title: 'GET /actuator/beans — All Beans in IoC Container',
+    desc: 'Lists every single bean Spring created and manages in the ApplicationContext',
+    analogy: '🗂️ The complete staff directory of your company. Every employee (bean), their job title (type), and who they report to (dependencies). This is the entire IoC container laid bare.',
+    concept: '<strong>This is the IoC Container made visible.</strong> You\'ll see every bean we created (StudentController, StudentService, StudentRepository, GlobalExceptionHandler, DevDataInitializer...) plus hundreds Spring created automatically (Tomcat, Jackson, Hibernate, HikariCP...). Each entry shows the bean\'s class, scope, and which other beans it depends on.',
+    method: 'GET', url: BASE+'/actuator/beans', params:[], headers:[], body:''
+  },
+  'act-mappings': {
+    title: 'GET /actuator/mappings — All URL Routes',
+    desc: 'Lists every @GetMapping, @PostMapping etc. registered in all controllers',
+    analogy: '🗺️ The complete route map of your city (app). Every road (URL) and where it leads (which controller method handles it).',
+    concept: '<strong>DispatcherServlet route registry made visible.</strong> You\'ll see all 21 mappings Spring registered at startup (we saw "21 mappings" in the startup log). Each entry shows: the URL pattern, HTTP method, which controller class, which method, and what parameter types it expects.',
+    method: 'GET', url: BASE+'/actuator/mappings', params:[], headers:[], body:''
+  },
+  'act-env': {
+    title: 'GET /actuator/env — All Properties & Config',
+    desc: 'Shows every property loaded from application.properties, env vars, system props',
+    analogy: '⚙️ The complete settings panel — every configuration knob in the system, where it came from, and what its value is. Passwords are masked automatically.',
+    concept: '<strong>Property sources in priority order</strong>: command-line args > environment variables > application-dev.properties > application.properties > Spring defaults. The env endpoint shows ALL of these layered together. Sensitive values like passwords are masked as <code>******</code>. <strong>Never expose this in production</strong> — it reveals your entire config.',
+    method: 'GET', url: BASE+'/actuator/env', params:[], headers:[], body:''
+  },
+  'profile-info': {
+    title: 'GET /api/info — Active Profile & Config',
+    desc: 'Shows which profile is active and what config values were loaded',
+    analogy: '🏢 Asking the building manager which office configuration is active today — dev lab setup or production floor setup. The answer tells you exactly which rules are in effect.',
+    concept: '<strong>Spring Profiles</strong>: <code>application.properties</code> sets <code>spring.profiles.active=dev</code>, so Spring also loads <code>application-dev.properties</code> on top. The <code>Environment</code> bean gives you access to all loaded properties and active profiles at runtime. Notice <code>show-sql=true</code> and <code>h2ConsoleEnabled=true</code> — both from the dev profile.',
+    method: 'GET', url: BASE+'/api/info', params:[], headers:[], body:''
+  },
+  'profile-value': {
+    title: '@Value — Inject any property into a field',
+    desc: 'Demonstrates @Value("${property.key}") reading from application.properties',
+    analogy: '📋 Like a staff handbook that lists the company name, office address, and policies. Any employee (@Component) can look up any value from the handbook without hardcoding it.',
+    concept: '<strong>@Value("${spring.application.name}")</strong> reads the value of <code>spring.application.name</code> from whichever properties file was loaded for the current profile and injects it directly into the field. Change the profile → different values are injected → zero code changes. This is how you avoid hardcoding environment-specific values like DB URLs, API keys, ports.',
+    method: 'GET', url: BASE+'/api/info', params:[], headers:[], body:''
+  },
+  'val-allbad': {
+    title: 'POST /api/students — All Fields Invalid',
+    desc: '@Valid triggers — all 3 fields fail their constraints simultaneously',
+    analogy: '🏦 A loan form where every field is wrong — blank name, fake email, empty course. The receptionist rejects it at the door with a list of exactly what needs fixing.',
+    concept: '<strong>@Valid</strong> on the controller parameter activates all annotations defined on <code>Student</code> fields. Spring\'s validator checks every field before the method body runs. <strong>MethodArgumentNotValidException</strong> carries the full list of all failing fields — our handler collects them into a <code>fieldErrors</code> map so the caller knows exactly what to fix.',
+    method: 'POST', url: BASE+'/api/students',
+    params:[], headers:[{key:'Content-Type',value:'application/json',enabled:true}],
+    body: '{\n  "name": "",\n  "email": "not-an-email",\n  "course": ""\n}'
+  },
+  'val-partialbad': {
+    title: 'POST /api/students — Email Invalid Only',
+    desc: 'Only @Email constraint fails — other fields are fine',
+    analogy: '📧 A form where name and course are fine, but the email looks like "dharani@@@@". Only that one field comes back as an error.',
+    concept: '<strong>@Email</strong> validates the format using a regex pattern. Even if name and course pass, Spring still rejects the whole request and reports only the failing field. The <code>fieldErrors</code> map will have exactly one entry: <code>{"email": "Must be a valid email address"}</code>.',
+    method: 'POST', url: BASE+'/api/students',
+    params:[], headers:[{key:'Content-Type',value:'application/json',enabled:true}],
+    body: '{\n  "name": "Dharani",\n  "email": "dharani@@@@invalid",\n  "course": "Java"\n}'
+  },
+  'val-toolong': {
+    title: 'POST /api/students — Name Too Long',
+    desc: '@Size constraint — name exceeds 50 character limit',
+    analogy: '📝 A form field that only allows 50 characters — you typed 80. The system stops you before saving.',
+    concept: '<strong>@Size(min=2, max=50)</strong> enforces length constraints. The message you defined in the annotation (<code>"Name must be between 2 and 50 characters"</code>) is exactly what appears in the error response. You control the error messages — no hardcoded Spring defaults.',
+    method: 'POST', url: BASE+'/api/students',
+    params:[], headers:[{key:'Content-Type',value:'application/json',enabled:true}],
+    body: '{\n  "name": "This name is way too long and exceeds the fifty character maximum limit set",\n  "email": "test@example.com",\n  "course": "Java"\n}'
+  },
+  'val-valid': {
+    title: 'POST /api/students — Valid Request ✓',
+    desc: 'All constraints pass — student is saved to the database',
+    analogy: '✅ A perfectly filled form — name is present, email is valid, course is specified. It sails through validation and gets filed.',
+    concept: 'When all <code>@Valid</code> checks pass, the method body runs normally. Notice how the controller method itself has zero validation logic — it just calls the service. <strong>Validation is declarative</strong>: you describe the rules on the model, Spring enforces them automatically.',
+    method: 'POST', url: BASE+'/api/students',
+    params:[], headers:[{key:'Content-Type',value:'application/json',enabled:true}],
+    body: '{\n  "name": "Dharani",\n  "email": "dharani@example.com",\n  "course": "Spring Boot"\n}'
+  },
+  'ex-notfound': {
+    title: 'GET /api/students/999 → 404',
+    desc: 'StudentNotFoundException thrown by service → caught by @ControllerAdvice → structured 404 JSON',
+    analogy: '🏨 Asking hotel reception for room 999 — it doesn\'t exist. Instead of a crash, you get a polite structured message: "Room 999 not found."',
+    concept: '<strong>Flow:</strong> Controller calls <code>studentService.getStudentById(999)</code> → Service calls <code>findById(999)</code> → returns empty Optional → <code>.orElseThrow()</code> fires <code>StudentNotFoundException</code> → bubbles up to <strong>@RestControllerAdvice</strong> → <code>@ExceptionHandler(StudentNotFoundException.class)</code> catches it → returns <code>404</code> with structured JSON. The controller itself has zero error-handling code.',
+    method: 'GET', url: BASE+'/api/students/999', params:[], headers:[], body:''
+  },
+  'ex-duplicate': {
+    title: 'POST /api/students → 409 Conflict',
+    desc: 'DuplicateEmailException thrown when same email is registered twice',
+    analogy: '📋 Trying to register for an exam with an email already in the system — the system rejects it with "Email already registered."',
+    concept: '<strong>@ExceptionHandler(DuplicateEmailException.class)</strong> maps this exception to HTTP <code>409 Conflict</code>. First POST will succeed (201). The second POST with the same email triggers the exception. This shows how different exception types map to different HTTP status codes — all in one central place.',
+    method: 'POST', url: BASE+'/api/students',
+    params:[], headers:[{key:'Content-Type',value:'application/json',enabled:true}],
+    body: '{\n  "name": "Test User",\n  "email": "dharani@example.com",\n  "course": "Java"\n}'
+  },
+  'ex-badtype': {
+    title: 'GET /api/students/abc → 400 Bad Type',
+    desc: 'MethodArgumentTypeMismatchException — "abc" cannot be converted to Long',
+    analogy: '🔢 Asking for employee #"abc" — the ID must be a number. The system catches the type mismatch and explains exactly what went wrong.',
+    concept: '<strong>MethodArgumentTypeMismatchException</strong> is thrown automatically by Spring when a path variable can\'t be converted to the required type (Long). Without a handler, you\'d get a generic 400. With our handler, you get a specific message: "Parameter \'id\' must be of type Long but got: \'abc\'".',
+    method: 'GET', url: BASE+'/api/students/abc', params:[], headers:[], body:''
+  },
+  'ex-badjson': {
+    title: 'POST /api/students → 400 Bad JSON',
+    desc: 'HttpMessageNotReadableException — malformed JSON body',
+    analogy: '📄 Submitting a form that\'s been torn and is unreadable. Spring can\'t parse it, so our handler explains clearly: "Request body contains invalid JSON."',
+    concept: '<strong>HttpMessageNotReadableException</strong> is thrown by Jackson (the JSON parser) when the request body is malformed. Without a handler, Spring returns a wall of technical text. Our handler converts it to a clean, user-friendly 400 message.',
+    method: 'POST', url: BASE+'/api/students',
+    params:[], headers:[{key:'Content-Type',value:'application/json',enabled:true}],
+    body: 'this is { not valid } json!!'
+  },
+  'students-getAll': {
+    title: 'GET /api/students',
+    desc: 'JpaRepository.findAll() — Spring generates SELECT * FROM student',
+    analogy: '🗄️ Opening the filing cabinet and reading every folder. JPA translates this one method call into a full SQL SELECT behind the scenes.',
+    concept: '<strong>JpaRepository</strong>: by extending it, your interface inherits <code>findAll()</code>, <code>save()</code>, <code>findById()</code>, <code>deleteById()</code> for free. Spring generates the SQL at startup using Hibernate. Check your terminal — you\'ll see the actual SQL printed because <code>show-sql=true</code> in application.properties.',
+    method: 'GET', url: BASE+'/api/students', params:[], headers:[], body:''
+  },
+  'students-getOne': {
+    title: 'GET /api/students/{id}',
+    desc: 'JpaRepository.findById() — SELECT WHERE id = ?',
+    analogy: '📁 Pulling a specific folder from the filing cabinet by its label number.',
+    concept: '<strong>findById(id)</strong> returns an <code>Optional&lt;Student&gt;</code>. If the row exists in the DB, you get it wrapped in Optional. If not, Optional.empty() → 404. This pattern avoids null pointer exceptions.',
+    method: 'GET', url: BASE+'/api/students/1', params:[], headers:[], body:''
+  },
+  'students-create': {
+    title: 'POST /api/students',
+    desc: 'JpaRepository.save() — INSERT INTO student ...',
+    analogy: '📝 Creating a new student record and filing it. JPA issues an INSERT and returns the saved row — now with a database-generated ID.',
+    concept: '<strong>save(entity)</strong> — if the entity has no ID, JPA runs INSERT. If it has an ID, JPA runs UPDATE. The returned object has the auto-generated ID filled in by the DB (<code>@GeneratedValue</code>).',
+    method: 'POST', url: BASE+'/api/students',
+    params:[], headers:[{key:'Content-Type',value:'application/json',enabled:true}],
+    body: '{\n  "name": "Dharani",\n  "email": "dharani@example.com",\n  "course": "Java"\n}'
+  },
+  'students-update': {
+    title: 'PUT /api/students/{id}',
+    desc: 'findById + save() — JPA runs UPDATE when entity already has an ID',
+    analogy: '✏️ Updating an existing student record. JPA knows it\'s an update because the entity already has an ID in the database.',
+    concept: '<strong>save(existingEntity)</strong> — when the entity\'s ID already exists in the DB, Hibernate issues an UPDATE instead of INSERT. Notice the SQL in terminal will say <code>update student set ...</code>.',
+    method: 'PUT', url: BASE+'/api/students/1',
+    params:[], headers:[{key:'Content-Type',value:'application/json',enabled:true}],
+    body: '{\n  "name": "Dharani Updated",\n  "email": "dharani@example.com",\n  "course": "Spring Boot"\n}'
+  },
+  'students-delete': {
+    title: 'DELETE /api/students/{id}',
+    desc: 'JpaRepository.deleteById() — DELETE FROM student WHERE id = ?',
+    analogy: '🗑️ Shredding a student file permanently from the cabinet.',
+    concept: '<strong>deleteById(id)</strong> runs a DELETE SQL. We first check <code>existsById()</code> to return a proper 404 if the student doesn\'t exist, rather than silently doing nothing.',
+    method: 'DELETE', url: BASE+'/api/students/1', params:[], headers:[], body:''
+  },
+  'students-byCourse': {
+    title: 'GET /api/students/course/{course}',
+    desc: 'Derived query — Spring generates SQL just from the method name!',
+    analogy: '🔍 Asking "give me all students enrolled in Java." You wrote no SQL — Spring read the method name findByCourse and wrote the WHERE clause for you.',
+    concept: '<strong>Derived Query Methods</strong>: Spring Data reads the method name <code>findByCourse(String course)</code> and generates <code>SELECT * FROM student WHERE course = ?</code> automatically. You can combine: <code>findByNameAndCourse</code>, <code>findByEmailContaining</code>, <code>findByIdGreaterThan</code> etc.',
+    method: 'GET', url: BASE+'/api/students/course/Java', params:[], headers:[], body:''
+  },
+  'students-search': {
+    title: 'GET /api/students/search?keyword=dha',
+    desc: 'findByNameContainingIgnoreCase — LIKE search, also derived from method name',
+    analogy: '🔎 A search box that matches any student whose name contains your keyword, case-insensitively.',
+    concept: '<strong>findByNameContainingIgnoreCase(keyword)</strong> → Spring generates: <code>SELECT * FROM student WHERE LOWER(name) LIKE LOWER(\'%keyword%\')</code>. No SQL written — pure method-name magic.',
+    method: 'GET', url: BASE+'/api/students/search',
+    params:[{key:'keyword', value:'dha', enabled:true}], headers:[], body:''
+  },
+  'orders-summary': {
+    title: 'GET /api/orders/summary',
+    desc: 'OrderService uses injected ProductService to combine data from both services',
+    analogy: '🏪 The store manager asks the inventory system (ProductService) and the billing system (OrderService) for data — they are separate systems but wired together by Spring.',
+    concept: '<strong>Dependency Injection</strong>: <code>OrderService</code> declares it needs a <code>ProductService</code> in its constructor. Spring\'s IoC container sees this, finds the <code>ProductService</code> bean it already created, and passes it in automatically. Both services share the <strong>same single instance</strong> — no <code>new</code> keyword, no manual wiring.',
+    method: 'GET',
+    url: BASE + '/api/orders/summary',
+    params: [],
+    headers: [],
+    body: ''
+  },
+  'orders-getAll': {
+    title: 'GET /api/orders',
+    desc: 'List all placed orders — empty until you POST one',
+    analogy: '📋 Checking the order ledger. Start empty, then place some orders with POST and watch this list grow.',
+    concept: '<strong>Spring Singleton Scope</strong>: The <code>OrderService</code> bean is created once and reused. This means the <code>orders</code> list inside it persists across all requests for the lifetime of the server — each call to this endpoint sees all previously placed orders.',
+    method: 'GET',
+    url: BASE + '/api/orders',
+    params: [],
+    headers: [],
+    body: ''
+  },
+  'orders-place': {
+    title: 'POST /api/orders',
+    desc: 'Place an order — OrderService calls ProductService internally to validate & price it',
+    analogy: '🛒 Placing an order at the counter. The cashier (OrderService) looks up the product price from the catalog (ProductService) — two services collaborating, wired by Spring.',
+    concept: '<strong>The DI chain in action</strong>: <code>OrderController</code> gets <code>OrderService</code> injected. <code>OrderService</code> gets <code>ProductService</code> injected. When you call this endpoint, <code>OrderService.placeOrder()</code> internally calls <code>productService.getProductById()</code> — using the injected instance. Try productId 1, 2, or 3.',
+    method: 'POST',
+    url: BASE + '/api/orders',
+    params: [],
+    headers: [{key:'Content-Type', value:'application/json', enabled:true}],
+    body: '{\n  "productId": 1,\n  "quantity": 2\n}'
+  },
+  'hello-hello': {
+    title: 'GET /hello',
+    desc: '@GetMapping — simplest possible endpoint, returns plain text',
+    analogy: '🍽️ The simplest waiter request — you walk in and ask "hello?", the restaurant just replies back.',
+    concept: '<strong>@GetMapping</strong> maps a <code>GET</code> HTTP request to a Java method. When someone visits <code>/hello</code>, Spring calls <code>sayHello()</code> and sends back whatever it returns.',
+    method: 'GET',
+    url: BASE + '/hello',
+    params: [],
+    headers: [],
+    body: ''
+  },
+  'hello-greet': {
+    title: 'GET /greet/{name}',
+    desc: '@PathVariable — extract a value embedded in the URL path',
+    analogy: '📋 Like a hotel receptionist reading the name off your reservation card — the name is part of the request path itself.',
+    concept: '<strong>@PathVariable</strong> pulls a value out of the URL path. The <code>{name}</code> in <code>@GetMapping("/greet/{name}")</code> is a placeholder. Whatever you put there gets injected into the method parameter.',
+    method: 'GET',
+    url: BASE + '/greet/Dharani',
+    params: [],
+    headers: [],
+    body: ''
+  },
+  'hello-welcome': {
+    title: 'GET /welcome?city=X',
+    desc: '@RequestParam — read a value from the query string (?key=value)',
+    analogy: '📝 Like a preference form — "Which city are you from?" is optional. If you skip it, a default answer is used.',
+    concept: '<strong>@RequestParam</strong> reads from the query string (<code>?city=Chennai</code>). The <code>defaultValue</code> means the param is optional — if missing, the default kicks in. Try sending without the param too!',
+    method: 'GET',
+    url: BASE + '/welcome',
+    params: [{key:'city', value:'Chennai', enabled:true}],
+    headers: [],
+    body: ''
+  },
+  'products-getAll': {
+    title: 'GET /api/products',
+    desc: 'Returns all products as a JSON array — the full list',
+    analogy: '🏬 Walking into a shop and saying "show me everything you have." The service layer fetches all items from the in-memory store and returns them as JSON.',
+    concept: '<strong>@RestController</strong> automatically converts the Java <code>List&lt;Product&gt;</code> return value to a JSON array using Jackson. No extra code needed — Spring handles it.',
+    method: 'GET',
+    url: BASE + '/api/products',
+    params: [],
+    headers: [],
+    body: ''
+  },
+  'products-getOne': {
+    title: 'GET /api/products/{id}',
+    desc: 'Fetch a single product by ID — returns 200 or 404',
+    analogy: '🔍 Asking a shopkeeper "do you have item #2?" — they check, and either hand it over (200 OK) or say "sorry, not found" (404).',
+    concept: '<strong>ResponseEntity</strong> lets you control the HTTP status code. <code>Optional</code> from the service maps to either <code>200 OK</code> with the product body, or <code>404 Not Found</code> — clean and expressive.',
+    method: 'GET',
+    url: BASE + '/api/products/1',
+    params: [],
+    headers: [],
+    body: ''
+  },
+  'products-create': {
+    title: 'POST /api/products',
+    desc: '@RequestBody — Spring deserializes incoming JSON into a Java object',
+    analogy: '📦 Supplier delivering a new product to the shop. You send the product details in the request body, Spring unpacks them into a Product object, and it gets added to the list.',
+    concept: '<strong>@RequestBody</strong> tells Spring to read the JSON body of the request and convert it into a <code>Product</code> Java object automatically. The response is <code>201 Created</code> with the saved product (now with an ID).',
+    method: 'POST',
+    url: BASE + '/api/products',
+    params: [],
+    headers: [{key:'Content-Type', value:'application/json', enabled:true}],
+    body: '{\n  "name": "Tablet",\n  "price": 45000\n}'
+  },
+  'products-update': {
+    title: 'PUT /api/products/{id}',
+    desc: 'Update an existing product — full replacement of name and price',
+    analogy: '✏️ Editing an existing product listing. You send the new details, Spring finds the product by ID, updates it in place, and returns the updated version.',
+    concept: '<strong>@PutMapping</strong> handles HTTP PUT — conventionally used for full updates. The service finds the item, replaces its fields, and returns <code>200 OK</code>. If the ID doesn\'t exist, <code>404 Not Found</code>.',
+    method: 'PUT',
+    url: BASE + '/api/products/1',
+    params: [],
+    headers: [{key:'Content-Type', value:'application/json', enabled:true}],
+    body: '{\n  "name": "Gaming Laptop",\n  "price": 120000\n}'
+  },
+  'products-delete': {
+    title: 'DELETE /api/products/{id}',
+    desc: 'Remove a product — returns 204 No Content on success',
+    analogy: '🗑️ Removing a product from the shelf. A successful delete returns 204 (done, nothing to show). If the product never existed, 404.',
+    concept: '<strong>@DeleteMapping</strong> handles HTTP DELETE. The convention is to return <code>204 No Content</code> on success (the item is gone, there\'s nothing to return). <code>Void</code> as the type signals no response body.',
+    method: 'DELETE',
+    url: BASE + '/api/products/3',
+    params: [],
+    headers: [],
+    body: ''
+  }
+};
+
+// ── Load Endpoint ──
+let currentEndpoint = null;
+
+function loadEndpoint(key) {
+  currentEndpoint = key;
+  const ep = ENDPOINTS[key];
+
+  // Highlight active sidebar item
+  document.querySelectorAll('.api-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  const methodColor = {GET:'#68d391',POST:'#f6ad55',PUT:'#63b3ed',DELETE:'#f56565',PATCH:'#b794f4'}[ep.method] || '#e2e8f0';
+
+  document.getElementById('mainContent').innerHTML = `
+    <!-- Endpoint header -->
+    <div class="endpoint-header">
+      <div class="endpoint-title">
+        <span style="color:${methodColor};font-family:monospace;font-weight:800;margin-right:10px">${ep.method}</span>${ep.title.replace(/^[A-Z]+ /,'')}
+      </div>
+      <div class="endpoint-desc">${ep.desc}</div>
+      <div class="endpoint-analogy">💡 ${ep.analogy}</div>
+    </div>
+
+    <!-- URL Bar -->
+    <div class="urlbar">
+      <select class="method-select" id="ep-method" onchange="onMethodChange()">
+        ${['GET','POST','PUT','DELETE','PATCH'].map(m=>`<option${m===ep.method?' selected':''}>${m}</option>`).join('')}
+      </select>
+      <input class="url-input" id="ep-url" type="text" value="${ep.url}"/>
+      <button class="send-btn" id="ep-sendBtn" onclick="sendEpRequest()">Send ↵</button>
+    </div>
+
+    <!-- Request + Response panels -->
+    <div class="panels">
+
+      <!-- Request panel -->
+      <div class="panel">
+        <div class="panel-header"><div class="dot" style="background:#6366f1"></div> Request</div>
+        <div class="tabs">
+          <div class="tab active" onclick="switchEpTab('params',this)">Params</div>
+          <div class="tab" onclick="switchEpTab('headers',this)">Headers</div>
+          <div class="tab" onclick="switchEpTab('body',this)">Body</div>
+          <div class="tab" onclick="switchEpTab('concept',this)">📖 Concept</div>
+        </div>
+
+        <!-- Params -->
+        <div class="tab-content active" id="ep-tab-params">
+          <div class="kv-table">
+            <table>
+              <thead><tr><th></th><th>Key</th><th>Value</th><th></th></tr></thead>
+              <tbody id="ep-params">
+                ${ep.params.map(p => kvRow(p.key, p.value, p.enabled)).join('') || kvRow('','')}
+              </tbody>
+            </table>
+          </div>
+          <button class="add-row-btn" onclick="addKvRow('ep-params')">+ Add Param</button>
+        </div>
+
+        <!-- Headers -->
+        <div class="tab-content" id="ep-tab-headers">
+          <div class="kv-table">
+            <table>
+              <thead><tr><th></th><th>Key</th><th>Value</th><th></th></tr></thead>
+              <tbody id="ep-headers">
+                ${ep.headers.map(h => kvRow(h.key, h.value, h.enabled)).join('') || kvRow('','')}
+              </tbody>
+            </table>
+          </div>
+          <button class="add-row-btn" onclick="addKvRow('ep-headers')">+ Add Header</button>
+        </div>
+
+        <!-- Body -->
+        <div class="tab-content" id="ep-tab-body">
+          <div class="body-area">
+            <div class="body-hint">JSON body (for POST / PUT)</div>
+            <textarea id="ep-body" placeholder='{\n  "name": "...",\n  "price": 0\n}'>${ep.body}</textarea>
+          </div>
+        </div>
+
+        <!-- Concept -->
+        <div class="tab-content" id="ep-tab-concept">
+          <div class="concept-box" style="margin-top:14px">
+            <div style="font-size:13px;font-weight:700;color:#818cf8;margin-bottom:8px">📚 How it works</div>
+            ${ep.concept}
+          </div>
+        </div>
+      </div>
+
+      <!-- Response panel -->
+      <div class="panel">
+        <div class="panel-header"><div class="dot" style="background:#68d391"></div> Response</div>
+        <div class="res-meta">
+          <span class="meta-label">Status</span><span class="meta-val s0" id="ep-status">—</span>
+          <span class="meta-label" style="margin-left:16px">Time</span><span class="meta-val" id="ep-time" style="color:#6b7280">—</span>
+          <span class="meta-label" style="margin-left:16px">Size</span><span class="meta-val" id="ep-size" style="color:#6b7280">—</span>
+        </div>
+        <div class="res-body">
+          <pre class="res-pre empty" id="ep-responseBody">Hit Send (or Ctrl+Enter) to see the response...</pre>
+        </div>
+      </div>
+
+    </div>
+  `;
+}
+
+// ── Build a key-value row ──
+function kvRow(k='', v='', enabled=true) {
+  return `<tr>
+    <td><input type="checkbox" ${enabled?'checked':''}></td>
+    <td><input type="text" placeholder="key" value="${k}"></td>
+    <td><input type="text" placeholder="value" value="${v}"></td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove()">×</button></td>
+  </tr>`;
+}
+
+function addKvRow(tbodyId) {
+  document.getElementById(tbodyId).insertAdjacentHTML('beforeend', kvRow());
+}
+
+// ── Tab switching ──
+function switchEpTab(name, el) {
+  const tabs = el.closest('.tabs').querySelectorAll('.tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const panel = el.closest('.panel');
+  panel.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  panel.querySelector('#ep-tab-' + name).classList.add('active');
+}
+
+// ── Collect kv rows ──
+function collectKv(tbodyId) {
+  const out = {};
+  document.querySelectorAll(`#${tbodyId} tr`).forEach(tr => {
+    const checked = tr.querySelector('input[type=checkbox]').checked;
+    const inputs = tr.querySelectorAll('input[type=text]');
+    const k = inputs[0]?.value.trim(), v = inputs[1]?.value.trim();
+    if (checked && k) out[k] = v;
+  });
+  return out;
+}
+
+// ── Send Request ──
+async function sendEpRequest() {
+  const btn = document.getElementById('ep-sendBtn');
+  const method = document.getElementById('ep-method').value;
+  let url = document.getElementById('ep-url').value.trim();
+  const bodyText = document.getElementById('ep-body')?.value.trim() || '';
+
+  if (!url) return;
+
+  // Append params to URL
+  const params = collectKv('ep-params');
+  const paramStr = Object.entries(params).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  if (paramStr) url = url.split('?')[0] + '?' + paramStr;
+
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+
+  const t0 = Date.now();
+  try {
+    const opts = { method, headers: collectKv('ep-headers') };
+    if (['POST','PUT','PATCH'].includes(method) && bodyText) opts.body = bodyText;
+
+    const res = await fetch(url, opts);
+    const elapsed = Date.now() - t0;
+    const text = await res.text();
+    let display = text;
+    try { display = JSON.stringify(JSON.parse(text), null, 2); } catch(_) {}
+
+    const pre = document.getElementById('ep-responseBody');
+    pre.textContent = display || '(empty response body)';
+    pre.className = 'res-pre';
+
+    const statusEl = document.getElementById('ep-status');
+    statusEl.textContent = `${res.status} ${res.statusText}`;
+    statusEl.className = 'meta-val ' + (res.status < 300 ? 's200' : res.status < 500 ? 's4xx' : 's5xx');
+
+    document.getElementById('ep-time').textContent = elapsed + ' ms';
+    document.getElementById('ep-size').textContent = new Blob([text]).size + ' B';
+
+  } catch(err) {
+    const pre = document.getElementById('ep-responseBody');
+    pre.textContent = 'Network Error: ' + err.message + '\n\nMake sure Spring Boot is running!';
+    pre.className = 'res-pre err';
+    document.getElementById('ep-status').textContent = 'Network Error';
+    document.getElementById('ep-status').className = 'meta-val s5xx';
+    document.getElementById('ep-time').textContent = (Date.now()-t0) + ' ms';
+  }
+
+  btn.innerHTML = 'Send ↵';
+  btn.disabled = false;
+}
+
+// ── Ctrl+Enter to send ──
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey||e.metaKey) && e.key==='Enter') sendEpRequest();
+});
+
+// ── Toggle sidebar group ──
+function toggleGroup(name) {
+  const g = document.getElementById('group-' + name);
+  g.classList.toggle('open');
+}
+
+// ── Server status check ──
+async function checkServer() {
+  try {
+    await fetch(BASE + '/hello', {signal: AbortSignal.timeout(2000)});
+    document.getElementById('statusDot').className = 'status-dot online';
+    document.getElementById('statusText').textContent = 'Server Online :8080';
+  } catch {
+    document.getElementById('statusDot').className = 'status-dot';
+    document.getElementById('statusText').textContent = 'Server Offline';
+  }
+}
+
+checkServer();
+setInterval(checkServer, 5000);
+</script>
+</body>
+</html>
