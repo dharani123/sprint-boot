@@ -28,4 +28,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     // SELECT * FROM student WHERE name LIKE %keyword%
     List<Student> findByNameContainingIgnoreCase(String keyword);
+
+    // SELECT COUNT(*) > 0 FROM student WHERE email = ?  — used in duplicate check & bulk enroll
+    boolean existsByEmail(String email);
 }

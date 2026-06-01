@@ -23,19 +23,19 @@ public class Student {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    public Long id;
 
     @NotBlank(message = "Name cannot be blank")
     @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
-    private String name;
+    public String name;
 
     @NotBlank(message = "Email cannot be blank")
     @Email(message = "Must be a valid email address")
-    private String email;
+    public String email;
 
     @NotBlank(message = "Course cannot be blank")
     @Size(min = 2, max = 100, message = "Course must be between 2 and 100 characters")
-    private String course;
+    public String course;
 
     // Custom constructor still works alongside Lombok-generated ones
     public Student(String name, String email, String course) {

@@ -1,8 +1,10 @@
 package org.example.controller;
 
 import jakarta.validation.Valid;
-import org.example.model.Student;
+import org.example.dto.StudentRequestDTO;
+import org.example.dto.StudentResponseDTO;
 import org.example.service.StudentService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,43 +21,58 @@ public class StudentController {
     }
 
     @GetMapping
-    public List<Student> getAllStudents() {
+    public List<StudentResponseDTO> getAllStudents() {
         return studentService.getAllStudents();
     }
 
-    // No more Optional — service throws StudentNotFoundException if not found
-    // GlobalExceptionHandler converts that exception → 404 JSON automatically
     @GetMapping("/{id}")
-    public Student getStudentById(@PathVariable Long id) {
+    public StudentResponseDTO getStudentById(@PathVariable Long id) {
         return studentService.getStudentById(id);
     }
 
+    // @RequestBody maps to StudentRequestDTO — no `id` field, so clients can never inject their own ID
     @PostMapping
-    public ResponseEntity<Student> addStudent(@Valid @RequestBody Student student) {
-        // @Valid triggers validation of all annotations on Student fields BEFORE this method runs
-        // If any annotation fails → MethodArgumentNotValidException is thrown automatically
-        // GlobalExceptionHandler catches it → returns 400 with field-level errors
-        return ResponseEntity.status(201).body(studentService.addStudent(student));
+    public ResponseEntity<StudentResponseDTO> addStudent(@Valid @RequestBody StudentRequestDTO dto) {
+        return ResponseEntity.status(201).body(studentService.addStudent(dto));
     }
 
     @PutMapping("/{id}")
-    public Student updateStudent(@PathVariable Long id, @Valid @RequestBody Student student) {
-        return studentService.updateStudent(id, student);
+    public StudentResponseDTO updateStudent(@PathVariable Long id, @Valid @RequestBody StudentRequestDTO dto) {
+        return studentService.updateStudent(id, dto);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
         studentService.deleteStudent(id);
-        return ResponseEntity.noContent().build(); // 204
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/course/{course}")
-    public List<Student> findByCourse(@PathVariable String course) {
+    public List<StudentResponseDTO> findByCourse(@PathVariable String course) {
         return studentService.findByCourse(course);
     }
 
     @GetMapping("/search")
-    public List<Student> search(@RequestParam String keyword) {
+    public List<StudentResponseDTO> search(@RequestParam String keyword) {
         return studentService.searchByName(keyword);
+    }
+
+    @GetMapping("/count")
+    public long getCount() {
+        return studentService.getCount();
+    }
+
+    @GetMapping("/paged")
+    public Page<StudentResponseDTO> getStudentsPaged(
+            @RequestParam(defaultValue = "0")   int    page,
+            @RequestParam(defaultValue = "3")   int    size,
+            @RequestParam(defaultValue = "id")  String sortBy,
+            @RequestParam(defaultValue = "asc") String direction) {
+        return studentService.getStudentsPaged(page, size, sortBy, direction);
+    }
+
+    @PostMapping("/bulk")
+    public ResponseEntity<List<StudentResponseDTO>> enrollBulk(@RequestBody List<@Valid StudentRequestDTO> dtos) {
+        return ResponseEntity.status(201).body(studentService.enrollBulk(dtos));
     }
 }
