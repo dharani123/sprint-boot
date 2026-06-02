@@ -10,12 +10,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-// @RestControllerAdvice = @ControllerAdvice + @ResponseBody
-// This class intercepts exceptions thrown by ANY controller in the app.
-// Think of it as a safety net stretched across all your controllers.
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -25,11 +24,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleStudentNotFound(
             StudentNotFoundException ex, HttpServletRequest request) {
 
+        log.warn("404 Not Found: {} → {}", request.getRequestURI(), ex.getMessage());
         ErrorResponse error = new ErrorResponse(
-            HttpStatus.NOT_FOUND.value(),   // 404
+            HttpStatus.NOT_FOUND.value(),
             "Not Found",
-            ex.getMessage(),                // "No student found with id: 999"
-            request.getRequestURI()         // "/api/students/999"
+            ex.getMessage(),
+            request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
@@ -40,8 +40,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDuplicateEmail(
             DuplicateEmailException ex, HttpServletRequest request) {
 
+        log.warn("409 Conflict: {} → {}", request.getRequestURI(), ex.getMessage());
         ErrorResponse error = new ErrorResponse(
-            HttpStatus.CONFLICT.value(),    // 409
+            HttpStatus.CONFLICT.value(),
             "Conflict",
             ex.getMessage(),
             request.getRequestURI()
@@ -65,6 +66,7 @@ public class GlobalExceptionHandler {
                         (existing, replacement) -> existing  // keep first message if field has multiple errors
                 ));
 
+        log.warn("400 Validation Failed: {} → {} field error(s): {}", request.getRequestURI(), fieldErrors.size(), fieldErrors.keySet());
         ValidationErrorResponse error = new ValidationErrorResponse(
             HttpStatus.BAD_REQUEST.value(),
             "Validation Failed",
@@ -117,8 +119,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex, HttpServletRequest request) {
 
+        log.error("500 Unexpected error: {} → {}", request.getRequestURI(), ex.getMessage(), ex);
         ErrorResponse error = new ErrorResponse(
-            HttpStatus.INTERNAL_SERVER_ERROR.value(), // 500
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
             "Internal Server Error",
             "An unexpected error occurred: " + ex.getMessage(),
             request.getRequestURI()

@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.example.model.Product;
 import org.example.service.ProductService;
 import org.springframework.http.ResponseEntity;
@@ -7,52 +8,73 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
-@RequestMapping("/api/products")  // All endpoints in this class start with /api/products
+@RequestMapping("/api/products")
 public class ProductController {
 
-    // Spring INJECTS the ProductService here automatically - we never call "new ProductService()"
-    // This is called Dependency Injection (DI) - Concept 6!
     private final ProductService productService;
 
     public ProductController(ProductService productService) {
         this.productService = productService;
     }
 
-    // GET /api/products  → returns all products as JSON array
     @GetMapping
     public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+        log.info("→ [ProductController] GET /api/products");
+        List<Product> result = productService.getAllProducts();
+        log.info("← [ProductController] GET /api/products → returning {} products", result.size());
+        return result;
     }
 
-    // GET /api/products/1  → returns single product or 404
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable int id) {
-        return productService.getProductById(id)
-                .map(ResponseEntity::ok)                        // found → 200 OK
-                .orElse(ResponseEntity.notFound().build());     // not found → 404
+        log.info("→ [ProductController] GET /api/products/{}", id);
+        ResponseEntity<Product> response = productService.getProductById(id)
+                .map(p -> {
+                    log.info("← [ProductController] GET /api/products/{} → 200 OK, name='{}'", id, p.getName());
+                    return ResponseEntity.ok(p);
+                })
+                .orElseGet(() -> {
+                    log.warn("← [ProductController] GET /api/products/{} → 404 Not Found", id);
+                    return ResponseEntity.notFound().<Product>build();
+                });
+        return response;
     }
 
-    // POST /api/products  → creates a new product from JSON body
     @PostMapping
     public ResponseEntity<Product> addProduct(@RequestBody Product product) {
+        log.info("→ [ProductController] POST /api/products, body: name='{}', price={}", product.getName(), product.getPrice());
         Product created = productService.addProduct(product);
-        return ResponseEntity.status(201).body(created);        // 201 Created
+        log.info("← [ProductController] POST /api/products → 201 Created, id={}", created.getId());
+        return ResponseEntity.status(201).body(created);
     }
 
-    // PUT /api/products/1  → updates an existing product
     @PutMapping("/{id}")
     public ResponseEntity<Product> updateProduct(@PathVariable int id, @RequestBody Product product) {
-        return productService.updateProduct(id, product)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        log.info("→ [ProductController] PUT /api/products/{}, new name='{}', price={}", id, product.getName(), product.getPrice());
+        ResponseEntity<Product> response = productService.updateProduct(id, product)
+                .map(p -> {
+                    log.info("← [ProductController] PUT /api/products/{} → 200 OK", id);
+                    return ResponseEntity.ok(p);
+                })
+                .orElseGet(() -> {
+                    log.warn("← [ProductController] PUT /api/products/{} → 404 Not Found", id);
+                    return ResponseEntity.notFound().<Product>build();
+                });
+        return response;
     }
 
-    // DELETE /api/products/1  → removes a product
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable int id) {
+        log.info("→ [ProductController] DELETE /api/products/{}", id);
         boolean deleted = productService.deleteProduct(id);
-        return deleted ? ResponseEntity.noContent().build()     // 204 No Content
-                       : ResponseEntity.notFound().build();     // 404
+        if (deleted) {
+            log.info("← [ProductController] DELETE /api/products/{} → 204 No Content", id);
+            return ResponseEntity.noContent().build();
+        } else {
+            log.warn("← [ProductController] DELETE /api/products/{} → 404 Not Found", id);
+            return ResponseEntity.notFound().build();
+        }
     }
 }
