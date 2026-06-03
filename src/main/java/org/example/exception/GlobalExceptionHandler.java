@@ -18,27 +18,43 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Handles: StudentNotFoundException thrown anywhere in the app
-    // → Always returns 404 Not Found with a clear message
-    @ExceptionHandler(StudentNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleStudentNotFound(
-            StudentNotFoundException ex, HttpServletRequest request) {
-
-        log.warn("404 Not Found: {} → {}", request.getRequestURI(), ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.NOT_FOUND.value(),
-            "Not Found",
-            ex.getMessage(),
-            request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
     // Handles: DuplicateEmailException
     // → Always returns 409 Conflict
     @ExceptionHandler(DuplicateEmailException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateEmail(
             DuplicateEmailException ex, HttpServletRequest request) {
+
+        log.warn("409 Conflict: {} → {}", request.getRequestURI(), ex.getMessage());
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.CONFLICT.value(),
+            "Conflict",
+            ex.getMessage(),
+            request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // Handles: InvalidCredentialsException → 401 Unauthorized
+    // Note: we use the same message for wrong email AND wrong password on purpose —
+    // telling an attacker which one is wrong would help them enumerate valid accounts
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(
+            InvalidCredentialsException ex, HttpServletRequest request) {
+
+        log.warn("401 Unauthorized: {} → {}", request.getRequestURI(), ex.getMessage());
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.UNAUTHORIZED.value(),
+            "Unauthorized",
+            ex.getMessage(),
+            request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    // Handles: DuplicateMobileException → 409 Conflict
+    @ExceptionHandler(DuplicateMobileException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateMobile(
+            DuplicateMobileException ex, HttpServletRequest request) {
 
         log.warn("409 Conflict: {} → {}", request.getRequestURI(), ex.getMessage());
         ErrorResponse error = new ErrorResponse(

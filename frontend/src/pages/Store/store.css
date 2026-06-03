@@ -24,12 +24,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .nav-delivery { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; flex: 1; max-width: 280px; }
 .nav-delivery-text .label { font-size: 10px; color: rgba(255,255,255,0.7); font-weight: 500; }
 .nav-delivery-text .address { font-size: 13px; color: #fff; font-weight: 600; }
-.spacer { flex: 1; }
-.explorer-link { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; background: rgba(255,255,255,0.15); border-radius: 8px; white-space: nowrap; transition: background 0.15s; }
-.explorer-link:hover { background: rgba(255,255,255,0.25); color: #fff; }
-.cart-btn { position: relative; display: flex; align-items: center; gap: 8px; background: #fff; color: var(--green); border: none; border-radius: 10px; cursor: pointer; padding: 8px 16px; font-size: 14px; font-weight: 700; transition: transform 0.1s, box-shadow 0.1s; white-space: nowrap; }
+.spacer { flex: 1; }.cart-btn { position: relative; display: flex; align-items: center; gap: 8px; background: #fff; color: var(--green); border: none; border-radius: 10px; cursor: pointer; padding: 8px 16px; font-size: 14px; font-weight: 700; transition: transform 0.1s, box-shadow 0.1s; white-space: nowrap; }
 .cart-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .cart-badge { background: var(--red); color: #fff; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; margin-left: 2px; }
+.nav-user { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; }
+.nav-user-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; }
+.logout-btn { background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.logout-btn:hover { background: rgba(255,255,255,0.35); }
 
 /* BANNER */
 .banner { background: #fff9e6; border-bottom: 1px solid #ffe9a0; text-align: center; padding: 7px; font-size: 12px; font-weight: 600; color: #8a6000; }

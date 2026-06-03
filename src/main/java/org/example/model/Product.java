@@ -1,20 +1,24 @@
 package org.example.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
+@Entity
+@Table(name = "products")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Product {
-    private int    id;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String name;
-    private double price;
+    private Double price;
     private String category;
     private String emoji;
-    private int    stock;
+    private Integer stock;
     private String unitLabel;
 }

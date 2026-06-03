@@ -28,7 +28,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getProductById(@PathVariable int id) {
+    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
         log.info("→ [ProductController] GET /api/products/{}", id);
         ResponseEntity<Product> response = productService.getProductById(id)
                 .map(p -> {
@@ -51,7 +51,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable int id, @RequestBody Product product) {
+    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
         log.info("→ [ProductController] PUT /api/products/{}, new name='{}', price={}", id, product.getName(), product.getPrice());
         ResponseEntity<Product> response = productService.updateProduct(id, product)
                 .map(p -> {
@@ -66,7 +66,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable int id) {
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         log.info("→ [ProductController] DELETE /api/products/{}", id);
         boolean deleted = productService.deleteProduct(id);
         if (deleted) {

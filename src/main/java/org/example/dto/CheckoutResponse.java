@@ -26,7 +26,7 @@ public class CheckoutResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class LineItem {
-        private int    productId;
+        private Long   productId;
         private String name;
         private String emoji;
         private int    quantity;

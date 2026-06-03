@@ -1,27 +1,47 @@
 package org.example.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.*;
+import org.example.model.User;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "orders")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Order {
 
-    private int orderId;
-    private int productId;
-    private String productName;
-    private int quantity;
-    private double totalPrice;
-    private String status;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    public Order(int orderId, int productId, String productName, int quantity, double totalPrice) {
-        this.orderId      = orderId;
-        this.productId    = productId;
-        this.productName  = productName;
-        this.quantity     = quantity;
-        this.totalPrice   = totalPrice;
-        this.status       = "CONFIRMED";
-    }
+    // @ManyToOne: many orders can belong to one user
+    // @JsonIgnore: prevents infinite recursion (User → Orders → User → ...)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
+
+    private String status;
+    private double subtotal;
+    private double deliveryFee;
+    private double platformFee;
+    private double total;
+
+    // @OneToMany: one Order has many OrderItems
+    // cascade = ALL: saving/deleting an Order automatically saves/deletes its items
+    // orphanRemoval: if an item is removed from the list, delete it from the DB too
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<OrderItem> items = new ArrayList<>();
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 }

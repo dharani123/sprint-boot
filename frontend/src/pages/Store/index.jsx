@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { authFetch } from '../../api'
 import Navbar         from './Navbar'
 import CategoryPills  from './CategoryPills'
 import ProductCard    from './ProductCard'
@@ -42,9 +43,8 @@ export default function Store() {
     const items = Object.entries(cart).map(([id, qty]) => ({
       productId: parseInt(id), quantity: qty,
     }))
-    const res   = await fetch('/api/cart/checkout', {
+    const res   = await authFetch('/api/cart/checkout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(items),
     })
     const order = await res.json()
