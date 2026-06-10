@@ -1,0 +1,40 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  Local infrastructure for QuickMart — run with: docker compose up  ║
+# ╚══════════════════════════════════════════════════════════════════╝
+#
+# A single-node Kafka broker running in KRaft mode (no ZooKeeper needed).
+# This is for LOCAL DEV ONLY — one broker, no replication, no security.
+
+services:
+  kafka:
+    image: apache/kafka:3.8.1
+    container_name: quickmart-kafka
+    ports:
+      # 9092 is the port our Spring app connects to from the host machine
+      - "9092:9092"
+    environment:
+      # ── This node's identity & roles ────────────────────────────────
+      # In KRaft mode one process can be both the "broker" (handles data)
+      # and the "controller" (manages cluster metadata).
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      # ── Listeners: which ports Kafka opens and what they're for ─────
+      # 9092 = client traffic (our app), 9093 = internal controller traffic
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # ── Advertised listener: the address Kafka HANDS BACK to clients ─
+      # The client first connects to 9092, then Kafka replies "talk to me at
+      # localhost:9092". Must be reachable from where the app runs (the host).
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+      # ── Controller quorum: who votes on metadata (just us, node 1) ──
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+
+      # ── Single-node replication settings (must be 1 with one broker) ─
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0

@@ -3,12 +3,15 @@ package org.example.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dto.CartItemRequest;
+import org.example.event.OrderPlacedEvent;
+import org.example.kafka.OrderEventProducer;
 import org.example.model.Order;
 import org.example.model.OrderItem;
 import org.example.model.Product;
 import org.example.model.User;
 import org.example.repository.OrderRepository;
 import org.example.repository.UserRepository;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +27,10 @@ public class OrderService {
     private final ProductService  productService;
     private final OrderRepository orderRepository;
     private final UserRepository  userRepository;
+
+    // ObjectProvider lets us depend on the producer WITHOUT requiring it to exist.
+    // When app.kafka.enabled=false the producer bean is absent, and this stays empty.
+    private final ObjectProvider<OrderEventProducer> orderEventProducer;
 
     public List<Order> getOrdersForUser(String email) {
         log.info("→ entering getOrdersForUser: email={}", email);
@@ -81,8 +88,44 @@ public class OrderService {
         order.setItems(items);
 
         Order saved = orderRepository.save(order);
+
+        // ── Announce the order to Kafka ──────────────────────────────────────
+        // The order is already safely in the DB. We now publish an event so other
+        // parts of the system can react on their own. Phase 1: a consumer just prints
+        // it. Phase 2: a consumer will index it into Elasticsearch.
+        // ifAvailable runs the lambda ONLY when the producer bean exists (Kafka enabled).
+        // When Kafka is disabled, checkout still works exactly the same — minus the event.
+        orderEventProducer.ifAvailable(producer -> producer.publishOrderPlaced(toEvent(saved, user)));
+
         log.info("← returning checkout: orderId={}, user={}, total=₹{}", saved.getId(), userEmail, total);
         return Optional.of(saved);
+    }
+
+    // Maps the persisted Order + its owner into the flat event we publish to Kafka.
+    private OrderPlacedEvent toEvent(Order order, User user) {
+        List<OrderPlacedEvent.Item> items = order.getItems().stream()
+                .map(oi -> OrderPlacedEvent.Item.builder()
+                        .productId(oi.getProductId())
+                        .productName(oi.getProductName())
+                        .emoji(oi.getEmoji())
+                        .quantity(oi.getQuantity())
+                        .unitPrice(oi.getUnitPrice())
+                        .itemTotal(oi.getItemTotal())
+                        .build())
+                .toList();
+
+        return OrderPlacedEvent.builder()
+                .orderId(order.getId())
+                .userEmail(user.getEmail())
+                .userName(user.getName())
+                .status(order.getStatus())
+                .subtotal(order.getSubtotal())
+                .deliveryFee(order.getDeliveryFee())
+                .platformFee(order.getPlatformFee())
+                .total(order.getTotal())
+                .createdAt(order.getCreatedAt())
+                .items(items)
+                .build();
     }
 
     public String getSummary() {

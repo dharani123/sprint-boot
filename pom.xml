@@ -94,6 +94,13 @@
             <version>0.12.6</version>
             <scope>runtime</scope>
         </dependency>
+
+        <!-- Spring Kafka: KafkaTemplate (producer) + @KafkaListener (consumer).
+             Version is managed by the Spring Boot parent. -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
